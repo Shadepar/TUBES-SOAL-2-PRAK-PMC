@@ -5,7 +5,7 @@
 
 void greedy(int start,int len,double **jarak,char **kota){
     double lenght=0;
-    int  i=0,lok=0;
+    int  i=start,lok=0;
     double min = DBL_MAX;
     char rute[len][100];
     int visited[len];
