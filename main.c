@@ -33,6 +33,11 @@ int main(){
         len++;
     }
 
+    if (len<6||len>15){
+        printf("The amount of cities is not within boundary");
+        return 0;
+    }
+
     char** kota = malloc(len * sizeof(*kota));
     for (int i=0;i<len;i++){
         kota[i] = malloc(100 * sizeof(*kota[i]));
