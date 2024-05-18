@@ -10,7 +10,7 @@
 #define C2 1.0
 #define BA 2.5
 #define BB 0.0
-#define RHOMAX 0.7
+#define RHOMAX 0.6
 #define RHOMIN 0.4
 
 int validation(int city, int currentParticle, int latestIndex, int **pos){
