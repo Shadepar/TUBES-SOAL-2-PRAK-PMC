@@ -18,8 +18,6 @@ typedef struct {
 } City;
 
 City cities[MAX_CITIES];
-int numCities;
-double distances[MAX_CITIES][MAX_CITIES];
 int finalPath[MAX_CITIES + 1];
 double finalRes = DBL_MAX;
 
@@ -29,44 +27,24 @@ void swap(int *x, int *y) {
     *y = temp;
 }
 
-double toRadians(double degree) {
-    return degree * (M_PI / 180.0);
+double haversine(double lat1, double lon1, double lat2, double lon2){
+    lat1 = lat1*(3.14159265359/180);
+    lon1 = lon1*(3.14159265359/180);
+    lat2 = lat2*(3.14159265359/180);
+    lon2 = lon2*(3.14159265359/180);
+    return 2*6371*asin(sqrt(pow(sin((lat2-lat1)/2),2)+cos(lat1)*cos(lat2)*pow(sin((lon2-lon1)/2),2)));
 }
 
-double haversine(double lat1, double lon1, double lat2, double lon2) {
-    double dlat = toRadians(lat2 - lat1);
-    double dlon = toRadians(lon2 - lon1);
-    lat1 = toRadians(lat1);
-    lat2 = toRadians(lat2);
-
-    double a = sin(dlat / 2) * sin(dlat / 2) +
-               sin(dlon / 2) * sin(dlon / 2) * cos(lat1) * cos(lat2);
-    double c = 2 * atan2(sqrt(a), sqrt(1 - a));
-    return R * c;
-}
-
-void calculateDistances() {
-    for (int i = 0; i < numCities; i++) {
-        for (int j = 0; j < numCities; j++) {
-            if (i == j) {
-                distances[i][j] = 0;
-            } else {
-                distances[i][j] = haversine(cities[i].latitude, cities[i].longitude, cities[j].latitude, cities[j].longitude);
-            }
-        }
-    }
-}
-
-void copyToFinal(int currPath[]) {
-    for (int i = 0; i < numCities; i++) {
+void copyToFinal(int currPath[], int len) {
+    for (int i = 0; i < len; i++) {
         finalPath[i] = currPath[i];
     }
-    finalPath[numCities] = currPath[0];
+    finalPath[len] = currPath[0];
 }
 
-double firstMin(double adj[MAX_CITIES][MAX_CITIES], int i) {
+double firstMin(double adj[MAX_CITIES][MAX_CITIES], int i, int len) {
     double min = DBL_MAX;
-    for (int k = 0; k < numCities; k++) {
+    for (int k = 0; k < len; k++) {
         if (adj[i][k] < min && i != k) {
             min = adj[i][k];
         }
@@ -74,9 +52,9 @@ double firstMin(double adj[MAX_CITIES][MAX_CITIES], int i) {
     return min;
 }
 
-double secondMin(double adj[MAX_CITIES][MAX_CITIES], int i) {
+double secondMin(double adj[MAX_CITIES][MAX_CITIES], int i, int len) {
     double first = DBL_MAX, second = DBL_MAX;
-    for (int j = 0; j < numCities; j++) {
+    for (int j = 0; j < len; j++) {
         if (i == j) continue;
         if (adj[i][j] <= first) {
             second = first;
@@ -89,40 +67,40 @@ double secondMin(double adj[MAX_CITIES][MAX_CITIES], int i) {
 }
 
 void TSPRec(double adj[MAX_CITIES][MAX_CITIES], double currBound, double currWeight,
-            int level, int currPath[], int visited[]) {
-    if (level == numCities) {
+            int level, int currPath[], int visited[], int len) {
+    if (level == len) {
         if (adj[currPath[level - 1]][currPath[0]] != 0) {
             double currRes = currWeight + adj[currPath[level - 1]][currPath[0]];
             if (currRes < finalRes) {
-                copyToFinal(currPath);
+                copyToFinal(currPath, len);
                 finalRes = currRes;
             }
         }
         return;
     }
 
-    for (int i = 0; i < numCities; i++) {
+    for (int i = 0; i < len; i++) {
         if (adj[currPath[level - 1]][i] != 0 && visited[i] == 0) {
             double temp = currBound;
             currWeight += adj[currPath[level - 1]][i];
 
             if (level == 1) {
-                currBound -= ((firstMin(adj, currPath[level - 1]) + firstMin(adj, i)) / 2.0);
+                currBound -= ((firstMin(adj, currPath[level - 1], len) + firstMin(adj, i, len)) / 2.0);
             } else {
-                currBound -= ((secondMin(adj, currPath[level - 1]) + firstMin(adj, i)) / 2.0);
+                currBound -= ((secondMin(adj, currPath[level - 1], len) + firstMin(adj, i, len)) / 2.0);
             }
 
             if (currBound + currWeight < finalRes) {
                 currPath[level] = i;
                 visited[i] = 1;
 
-                TSPRec(adj, currBound, currWeight, level + 1, currPath, visited);
+                TSPRec(adj, currBound, currWeight, level + 1, currPath, visited, len);
             }
 
             currWeight -= adj[currPath[level - 1]][i];
             currBound = temp;
 
-            memset(visited, 0, sizeof(int) * numCities);
+            memset(visited, 0, sizeof(int) * len);
             for (int j = 0; j <= level - 1; j++) {
                 visited[currPath[j]] = 1;
             }
@@ -130,7 +108,7 @@ void TSPRec(double adj[MAX_CITIES][MAX_CITIES], double currBound, double currWei
     }
 }
 
-void TSP(double adj[MAX_CITIES][MAX_CITIES], int startCityIndex) {
+void TSP(double adj[MAX_CITIES][MAX_CITIES], int startCityIndex, int len) {
     int currPath[MAX_CITIES + 1];
     int visited[MAX_CITIES] = {0};
 
@@ -138,8 +116,8 @@ void TSP(double adj[MAX_CITIES][MAX_CITIES], int startCityIndex) {
     memset(currPath, -1, sizeof(currPath));
     memset(finalPath, -1, sizeof(finalPath));
 
-    for (int i = 0; i < numCities; i++) {
-        currBound += (firstMin(adj, i) + secondMin(adj, i));
+    for (int i = 0; i < len; i++) {
+        currBound += (firstMin(adj, i, len) + secondMin(adj, i, len));
     }
 
     currBound = (fmod(currBound, 2) == 1) ? currBound / 2.0 + 1 : currBound / 2.0;
@@ -147,11 +125,11 @@ void TSP(double adj[MAX_CITIES][MAX_CITIES], int startCityIndex) {
     visited[startCityIndex] = 1;
     currPath[0] = startCityIndex;
 
-    TSPRec(adj, currBound, 0, 1, currPath, visited);
+    TSPRec(adj, currBound, 0, 1, currPath, visited, len);
 }
 
-int findCityIndex(char *cityName) {
-    for (int i = 0; i < numCities; i++) {
+int findCityIndex(char *cityName, int len) {
+    for (int i = 0; i < len; i++) {
         if (strcmp(cities[i].name, cityName) == 0) {
             return i;
         }
@@ -159,7 +137,7 @@ int findCityIndex(char *cityName) {
     return -1;
 }
 
-void readCitiesFromFile(char *fileName) {
+void readCitiesFromFile(char *fileName, int *len) {
     FILE *file = fopen(fileName, "r");
     if (!file) {
         perror("Error opening file");
@@ -167,11 +145,12 @@ void readCitiesFromFile(char *fileName) {
     }
 
     char line[100];
-    numCities = 0;
+
+    *len = 0;
 
     while (fgets(line, sizeof(line), file)) {
-        sscanf(line, "%[^,],%lf,%lf", cities[numCities].name, &cities[numCities].latitude, &cities[numCities].longitude);
-        numCities++;
+        sscanf(line, "%[^,],%lf,%lf", cities[*len].name, &cities[*len].latitude, &cities[*len].longitude);
+        (*len)++;
     }
 
     fclose(file);
@@ -182,31 +161,45 @@ int main() {
     char startCity[50];
     time_t start, end;
 
+    int len;
+    double latlong[MAX_CITIES][2];
+
     printf("Enter list of cities file name: ");
     scanf("%s", fileName);
 
     printf("Enter starting point: ");
     scanf("%s", startCity);
 
-    readCitiesFromFile(fileName);
-    calculateDistances();
+    readCitiesFromFile(fileName, &len);
 
-    int startCityIndex = findCityIndex(startCity);
+    int startCityIndex = findCityIndex(startCity, len);
     if (startCityIndex == -1) {
         printf("Starting city not found in the list.\n");
         return 1;
     }
 
+    // Initialize the adjacency matrix for distances between cities
+    double adj[MAX_CITIES][MAX_CITIES];
+    for (int i = 0; i < len; i++) {
+        for (int j = 0; j < len; j++) {
+            if (i == j) {
+                adj[i][j] = 0;
+            } else {
+                adj[i][j] = haversine(cities[i].latitude, cities[i].longitude, cities[j].latitude, cities[j].longitude);
+            }
+        }
+    }
+
     start = time(NULL);
-    TSP(distances, startCityIndex);
+    TSP(adj, startCityIndex, len);
     end = time(NULL);
 
     double timeTaken = difftime(end, start);
 
     printf("Best route found:\n");
-    for (int i = 0; i <= numCities; i++) {
+    for (int i = 0; i <= len; i++) {
         printf("%s", cities[finalPath[i]].name);
-        if (i < numCities) {
+        if (i < len) {
             printf(" -> ");
         }
     }
