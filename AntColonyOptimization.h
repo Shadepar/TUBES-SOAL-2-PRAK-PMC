@@ -1,5 +1,5 @@
-#ifndef ANT_COLONY_OPTIMIZATION_H
-#define ANT_COLONY_OPTIMIZATION_H
+#ifndef ANT_COLONY_OPTIMIZATION_H_
+#define ANT_COLONY_OPTIMIZATION_H_
 
 void AntColonyOptimization(int start, int len, double **jarak, char **kota);
 

@@ -47,12 +47,6 @@ void runalgo(int start,int len,double **jarak,char **kota){
     t = clock()-t;
     printf("Time elapsed: %.20f\n", ((double)t)/CLOCKS_PER_SEC);
 
-    printf("\nAlgoritma Genetika\n");
-    t = clock();
-    genetic(start,len,jarak,kota);
-    t = clock()-t;
-    printf("Time elapsed: %.20f\n", ((double)t)/CLOCKS_PER_SEC);
-
     printf("\nAlgoritma Ant Colony Optimization\n");
     t = clock();
     AntColonyOptimization(start,len,jarak,kota);
@@ -62,6 +56,12 @@ void runalgo(int start,int len,double **jarak,char **kota){
     printf("\nAlgoritma Particle Swarm Optimization\n");
     t = clock();
     PSO(start,len,jarak,kota);
+    t = clock()-t;
+    printf("Time elapsed: %.20f\n", ((double)t)/CLOCKS_PER_SEC);
+
+    printf("\nAlgoritma Genetika\n");
+    t = clock();
+    genetic(start,len,jarak,kota);
     t = clock()-t;
     printf("Time elapsed: %.20f\n", ((double)t)/CLOCKS_PER_SEC);
 }

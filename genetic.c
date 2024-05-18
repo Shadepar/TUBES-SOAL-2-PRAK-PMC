@@ -177,8 +177,9 @@ void evolve(struct Chromosome *population, struct Chromosome *newPopulation, int
 
 
 void genetic(int startCityIndex,int numCities,double **jarak,char **kota) {
-    struct Chromosome *population = (struct Chromosome *)malloc(POPULATION_SIZE * sizeof(struct Chromosome));
-    struct Chromosome *newPopulation = (struct Chromosome *)malloc(POPULATION_SIZE * sizeof(struct Chromosome));
+    struct Chromosome template;
+    struct Chromosome *population = malloc(POPULATION_SIZE * sizeof(template));
+    struct Chromosome *newPopulation = malloc(POPULATION_SIZE * sizeof(template));
     if (!population || !newPopulation) {
         printf("Memory allocation failed.\n");
         return;
@@ -205,8 +206,4 @@ void genetic(int startCityIndex,int numCities,double **jarak,char **kota) {
     }
     printf("%s\n", kota[population[bestIndex].genes[0]]); // Back to starting city
     printf("Best route distance: %.2f km\n", population[bestIndex].fitness);
-
-    // Free memory
-    free(population);
-    free(newPopulation);
 }

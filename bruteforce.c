@@ -14,8 +14,8 @@ void bruteForce(int start, int len, double **jarak, char **kota) {
         printf("Cities cannot be less than 6 and more than 15\n");
         return;
     }
-    int *rute = (int *)malloc(len * sizeof(int)); // Array untuk menyimpan rute
-    int *shortestPath = (int *)malloc(len * sizeof(int)); // Array untuk menyimpan rute terdekat
+    int *rute = malloc(len * sizeof(rute)); // Array untuk menyimpan rute
+    int *shortestPath = malloc(len * sizeof(shortestPath)); // Array untuk menyimpan rute terdekat
     double shortestDistance = DBL_MAX; // Jarak rute terdekat
     int j;
     
