@@ -4,6 +4,7 @@
 #include <float.h>
 #include <math.h>
 #include <time.h>
+#include "pso.h"
 
 #define C1 3.0
 #define C2 1.0
