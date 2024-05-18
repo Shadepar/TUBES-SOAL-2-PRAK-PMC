@@ -180,7 +180,7 @@ void readCitiesFromFile(char *fileName) {
 int main() {
     char fileName[100];
     char startCity[50];
-    clock_t start, end;
+    time_t start, end;
 
     printf("Enter list of cities file name: ");
     scanf("%s", fileName);
@@ -197,11 +197,11 @@ int main() {
         return 1;
     }
 
-    start = clock();
+    start = time(NULL);
     TSP(distances, startCityIndex);
-    end = clock();
+    end = time(NULL);
 
-    double timeTaken = ((double)(end - start)) / CLOCKS_PER_SEC;
+    double timeTaken = difftime(end, start);
 
     printf("Best route found:\n");
     for (int i = 0; i <= numCities; i++) {
@@ -211,7 +211,7 @@ int main() {
         }
     }
     printf("\nBest route distance: %.4f km\n", finalRes);
-    printf("Time elapsed: %.20f s\n", timeTaken);
+    printf("Time elapsed: %.10f s\n", timeTaken);
 
     return 0;
 }
