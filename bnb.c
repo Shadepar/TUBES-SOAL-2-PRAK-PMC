@@ -22,12 +22,12 @@ void copyToFinal(int *currPath,int numCities) {
     for (int i = 0; i < numCities; i++) {
         finalPath[i] = currPath[i];
     }
-    finalPath[len] = currPath[0];
+    finalPath[numCities] = currPath[0];
 }
 
 double firstMin(double **adj, int i,int numCities) {
     double min = DBL_MAX;
-    for (int k = 0; k < len; k++) {
+    for (int k = 0; k < numCities; k++) {
         if (adj[i][k] < min && i != k) {
             min = adj[i][k];
         }
@@ -37,7 +37,7 @@ double firstMin(double **adj, int i,int numCities) {
 
 double secondMin(double **adj, int i,int numCities) {
     double first = DBL_MAX, second = DBL_MAX;
-    for (int j = 0; j < len; j++) {
+    for (int j = 0; j < numCities; j++) {
         if (i == j) continue;
         if (adj[i][j] <= first) {
             second = first;
@@ -61,7 +61,7 @@ void TSPRec(double **adj, double currBound, double currWeight,int level, int *cu
         return;
     }
 
-    for (int i = 0; i < len; i++) {
+    for (int i = 0; i < numCities; i++) {
         if (adj[currPath[level - 1]][i] != 0 && visited[i] == 0) {
             double temp = currBound;
             currWeight += adj[currPath[level - 1]][i];
@@ -82,7 +82,7 @@ void TSPRec(double **adj, double currBound, double currWeight,int level, int *cu
             currWeight -= adj[currPath[level - 1]][i];
             currBound = temp;
 
-            memset(visited, 0, sizeof(int) * len);
+            memset(visited, 0, sizeof(int) * numCities);
             for (int j = 0; j <= level - 1; j++) {
                 visited[currPath[j]] = 1;
             }
