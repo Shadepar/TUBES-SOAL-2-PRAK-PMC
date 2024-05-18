@@ -4,6 +4,7 @@
 #include "greedy.h"
 
 void greedy(int start,int len,double **jarak,char **kota){
+    
     double lenght=0,min=DBL_MAX;
     int  i=start,lok=0;
     int *visited = malloc(len * sizeof(visited));
