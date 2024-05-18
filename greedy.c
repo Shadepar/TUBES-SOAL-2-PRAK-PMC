@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <float.h>
 #include "greedy.h"
 
 void greedy(int start,int len,double **jarak,char **kota){
-    
     double lenght=0,min=DBL_MAX;
     int  i=start,lok=0;
     int *visited = malloc(len * sizeof(visited));
@@ -31,5 +31,5 @@ void greedy(int start,int len,double **jarak,char **kota){
     }
     lenght += jarak[i][start];
     printf(" -> %s\n",kota[start]);
-    printf("Best route distance:%f\n",lenght);
+    printf("Best route distance: %f km\n",lenght);
 }

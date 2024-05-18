@@ -1,83 +1,21 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <stdbool.h>
 #include <string.h>
+#include <stdlib.h>
+#include <float.h>
+#include <math.h>
 #include <time.h>
+#include "genetic.h"
 
-#define PI 3.14159265358979323846
-#define RADIUS 6371 // Radius of the Earth in kilometers
 #define MAX_CITIES 100
 #define POPULATION_SIZE 50
 #define MUTATION_RATE 0.01
 #define NUM_GENERATIONS 1000
-
-// Structure to represent a city
-struct City {
-    char name[50];
-    double latitude;
-    double longitude;
-};
 
 // Structure to represent a chromosome (route)
 struct Chromosome {
     int genes[MAX_CITIES];
     double fitness;
 };
-
-// Function to calculate distance between two cities using Haversine formula
-double calculateDistance(struct City city1, struct City city2) {
-    double phi1 = city1.latitude * PI / 180;
-    double phi2 = city2.latitude * PI / 180;
-    double deltaPhi = (city2.latitude - city1.latitude) * PI / 180;
-    double deltaLambda = (city2.longitude - city1.longitude) * PI / 180;
-
-    double a = sin(deltaPhi / 2) * sin(deltaPhi / 2) +
-               cos(phi1) * cos(phi2) *
-               sin(deltaLambda / 2) * sin(deltaLambda / 2);
-    double c = 2 * atan2(sqrt(a), sqrt(1 - a));
-    double distance = RADIUS * c;
-
-    return distance;
-}
-
-// Function to read cities data from CSV file
-int readCitiesFromFile(const char *fileName, struct City *cities) {
-    FILE *file = fopen(fileName, "r");
-    if (!file) {
-        printf("Error: Could not open file %s\n", fileName);
-        return 0;
-    }
-
-    int numCities = 0;
-    char line[1024];
-    while (fgets(line, 1024, file)) {
-        // Check if we have reached the maximum number of cities
-        if (numCities >= MAX_CITIES) {
-            printf("Warning: Maximum number of cities (%d) reached. Some cities may not be loaded.\n", MAX_CITIES);
-            break;
-        }
-
-        char *token = strtok(line, ",");
-        if (token != NULL) {
-            strcpy(cities[numCities].name, token);
-
-            token = strtok(NULL, ",");
-            if (token != NULL) {
-                cities[numCities].latitude = atof(token);
-
-                token = strtok(NULL, ",");
-                if (token != NULL) {
-                    cities[numCities].longitude = atof(token);
-                    numCities++;
-                }
-            }
-        }
-    }
-
-    fclose(file);
-    return numCities;
-}
 
 // Function to initialize a population of chromosomes randomly
 void initializePopulation(struct Chromosome *population, int numCities, int startCityIndex) {
@@ -105,13 +43,13 @@ void initializePopulation(struct Chromosome *population, int numCities, int star
 }
 
 // Function to calculate the fitness of each chromosome (route)
-void calculateFitness(struct Chromosome *population, struct City *cities, int numCities) {
+void calculateFitness(struct Chromosome *population, double **jarak, int numCities) {
     for (int i = 0; i < POPULATION_SIZE; i++) {
         double totalDistance = 0;
         for (int j = 0; j < numCities - 1; j++) {
-            totalDistance += calculateDistance(cities[population[i].genes[j]], cities[population[i].genes[j + 1]]);
+            totalDistance += jarak[population[i].genes[j]][population[i].genes[j + 1]];
         }
-        totalDistance += calculateDistance(cities[population[i].genes[numCities - 1]], cities[population[i].genes[0]]);
+        totalDistance += jarak[population[i].genes[numCities - 1]][population[i].genes[0]];
         population[i].fitness = totalDistance;
     }
 }
@@ -224,7 +162,7 @@ void elitism(struct Chromosome *population, struct Chromosome *newPopulation, in
 }
 
 // Function to evolve the population using genetic algorithm
-void evolve(struct Chromosome *population, struct Chromosome *newPopulation, struct City *cities, int numCities) {
+void evolve(struct Chromosome *population, struct Chromosome *newPopulation, int numCities) {
     elitism(population, newPopulation, numCities);
     for (int i = 1; i < POPULATION_SIZE; i++) {
         struct Chromosome parent1, parent2, child1, child2;
@@ -238,7 +176,7 @@ void evolve(struct Chromosome *population, struct Chromosome *newPopulation, str
 }
 
 
-void findShortestRoute(struct City *cities, int numCities, int startCityIndex) {
+void genetic(int startCityIndex,int numCities,double **jarak,char **kota) {
     struct Chromosome *population = (struct Chromosome *)malloc(POPULATION_SIZE * sizeof(struct Chromosome));
     struct Chromosome *newPopulation = (struct Chromosome *)malloc(POPULATION_SIZE * sizeof(struct Chromosome));
     if (!population || !newPopulation) {
@@ -247,16 +185,14 @@ void findShortestRoute(struct City *cities, int numCities, int startCityIndex) {
     }
     
     initializePopulation(population, numCities, startCityIndex); // Pass startCityIndex
-    calculateFitness(population, cities, numCities);
-    clock_t begin = clock();
+    calculateFitness(population, jarak, numCities);
     for (int generation = 0; generation < NUM_GENERATIONS; generation++) {
-        evolve(population, newPopulation, cities, numCities);
+        evolve(population, newPopulation, numCities);
         struct Chromosome *temp = population;
         population = newPopulation;
         newPopulation = temp;
-        calculateFitness(population, cities, numCities);
+        calculateFitness(population, jarak, numCities);
     }
-    clock_t end = clock();
     int bestIndex = 0;
     for (int i = 1; i < POPULATION_SIZE; i++) {
         if (population[i].fitness < population[bestIndex].fitness) {
@@ -265,52 +201,12 @@ void findShortestRoute(struct City *cities, int numCities, int startCityIndex) {
     }
     printf("Best route found:\n");
     for (int i = 0; i < numCities; i++) {
-        printf("%s -> ", cities[population[bestIndex].genes[i]].name);
+        printf("%s -> ", kota[population[bestIndex].genes[i]]);
     }
-    printf("%s\n", cities[population[bestIndex].genes[0]].name); // Back to starting city
-    printf("Total distance traveled: %.2f kilometers\n", population[bestIndex].fitness);
-    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-    printf("Time elapsed: %.10f s\n", time_spent);
+    printf("%s\n", kota[population[bestIndex].genes[0]]); // Back to starting city
+    printf("Best route distance: %.2f km\n", population[bestIndex].fitness);
 
     // Free memory
     free(population);
     free(newPopulation);
-}
-
-
-int main() {
-    // Input list of cities file name
-    char fileName[100];
-    printf("Enter list of cities file name: ");
-    scanf("%s", fileName);
-
-    // List of cities
-    struct City cities[MAX_CITIES];
-    int numCities = readCitiesFromFile(fileName, cities);
-    printf("Number of cities: %d\n", numCities);
-    if (numCities == 0)
-        return 1;
-
-    // Input starting point
-    char startCityName[50];
-    int startCityIndex = -1;
-    while (startCityIndex == -1) {
-        printf("Enter starting point: ");
-        scanf("%s", startCityName);
-        for (int i = 0; i < numCities; i++) {
-            if (strcmp(cities[i].name, startCityName) == 0) {
-                startCityIndex = i;
-                printf("Start city index: %d\n", startCityIndex);
-                break;
-            }
-        }
-        if (startCityIndex == -1) {
-            printf("Error: Starting city not found. Please enter a valid city name.\n");
-        }
-    }
-
-    // Find shortest route using genetic algorithm
-    findShortestRoute(cities, numCities, startCityIndex);
-
-    return 0;
 }

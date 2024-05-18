@@ -231,5 +231,5 @@ void PSO(int start,int N, double **jarak,char **kota){
         printf(" -> %s",kota[gBest[i]]);
     }
     printf("\n");
-    printf("Best route distance:%f\n",cost(gBest, N, dist));
+    printf("Best route distance: %f km\n",cost(gBest, N, dist));
 }

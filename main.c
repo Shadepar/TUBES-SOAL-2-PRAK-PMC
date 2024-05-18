@@ -5,6 +5,12 @@
 #include <math.h>
 #include <time.h>
 #include "greedy.h"
+#include "bruteforce.h"
+#include "DFS.h"
+#include "bnb.h"
+#include "AntColonyOptimization.h"
+#include "genetic.h"
+#include "pso.h"
 
 double haversine(double lat1, double lon1, double lat2, double lon2){
     lat1 = lat1*(3.14159265359/180);
@@ -12,6 +18,52 @@ double haversine(double lat1, double lon1, double lat2, double lon2){
     lat2 = lat2*(3.14159265359/180);
     lon2 = lon2*(3.14159265359/180);
     return 2*6371*asin(sqrt(pow(sin((lat2-lat1)/2),2)+cos(lat1)*cos(lat2)*pow(sin((lon2-lon1)/2),2)));
+}
+
+void runalgo(int start,int len,double **jarak,char **kota){
+    
+    clock_t t;
+    printf("\nAlgoritma Greedy\n");
+    t = clock();
+    greedy(start,len,jarak,kota);
+    t = clock()-t;
+    printf("Time elapsed: %.20f\n", ((double)t)/CLOCKS_PER_SEC);
+
+    printf("\nAlgoritma Brute Force\n");
+    t = clock();
+    bruteForce(start,len,jarak,kota);
+    t = clock()-t;
+    printf("Time elapsed: %.20f\n", ((double)t)/CLOCKS_PER_SEC);
+
+    printf("\nAlgoritma Depth First Search\n");
+    t = clock();
+    DFS(start,len,jarak,kota);
+    t = clock()-t;
+    printf("Time elapsed: %.20f\n", ((double)t)/CLOCKS_PER_SEC);
+
+    printf("\nAlgoritma Branch and Bound\n");
+    t = clock();
+    bnb(start,len,jarak,kota);
+    t = clock()-t;
+    printf("Time elapsed: %.20f\n", ((double)t)/CLOCKS_PER_SEC);
+
+    printf("\nAlgoritma Genetika\n");
+    t = clock();
+    genetic(start,len,jarak,kota);
+    t = clock()-t;
+    printf("Time elapsed: %.20f\n", ((double)t)/CLOCKS_PER_SEC);
+
+    printf("\nAlgoritma Ant Colony Optimization\n");
+    t = clock();
+    AntColonyOptimization(start,len,jarak,kota);
+    t = clock()-t;
+    printf("Time elapsed: %.20f\n", ((double)t)/CLOCKS_PER_SEC);
+
+    printf("\nAlgoritma Particle Swarm Optimization\n");
+    t = clock();
+    PSO(start,len,jarak,kota);
+    t = clock()-t;
+    printf("Time elapsed: %.20f\n", ((double)t)/CLOCKS_PER_SEC);
 }
 
 int main(){
@@ -87,8 +139,5 @@ int main(){
         return 0;
     }
     
-    t = clock();
-    greedy(i,len,jarak,kota);
-    t = clock()-t;
-    printf("Time elapsed: %.20f", ((double)t)/CLOCKS_PER_SEC);
+    runalgo(i,len,jarak,kota);
 }
