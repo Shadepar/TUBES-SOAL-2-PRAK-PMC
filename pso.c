@@ -1,7 +1,9 @@
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
+#include <float.h>
 #include <math.h>
-#include "pso.h"
+#include <time.h>
 
 #define C1 3.0
 #define C2 1.0
@@ -35,14 +37,14 @@ int randomPermutation(int currentParticle, int latestIndex, int **pos, int N, in
     } 
 }
 
-int generateRoute(int currentParticle, double **sortedProb, double **prob, int *visited, int N, int **pos, int startingCity){
+int generateRoute(int currentParticle, double **sortedX, double **x, int *visited, int N, int **pos, int startingCity){
     int newRoute[N-1];
     int index = 0;
     for(int i = 0; i < N; i++){
         //index = 0;
         for(int j = 0; j < N; j++){
-            if(sortedProb[currentParticle][i] == prob[currentParticle][j]){
-                //printf("%lf %lf\n", sortedProb[currentParticle][i], prob[currentParticle][j]);
+            if(sortedX[currentParticle][i] == x[currentParticle][j]){
+                //printf("%lf %lf\n", sortedX[currentParticle][i], x[currentParticle][j]);
                 if((visited[j] != 1) && (j != startingCity)){
                     newRoute[index] = j;
                     //printf("%d \n", pos[currentParticle][j]);
@@ -58,62 +60,62 @@ int generateRoute(int currentParticle, double **sortedProb, double **prob, int *
     }
 }
 
-void printProb(int NP, int N, double **prob){
+void printX(int NP, int N, double **x){
     for(int i = 0; i <NP; i++){
         for(int j = 0; j < N; j++){
-            printf("%d ", prob[i][j]);
+            printf("%d ", x[i][j]);
         }
-        printf("probability\n");
+        printf("x\n");
     }
 }
 
-void update_velocity(int iter, int NP, int NI, int N, double **vel, double **probPbest, double **prob, double *probGbest) {
+void update_velocity(int iter, int NP, int NI, int N, double **vel, double **xPbest, double **x, double *xGbest) {
     //srand(time(NULL));
     for(int i = 0; i < NP; i++){
         double inertia = RHOMAX - ((RHOMAX - RHOMIN) / NI) * iter;
         /*
         for(int j = 0; j < N; j++){
-            printf("%lf ", prob[i][j]);
+            printf("%lf ", x[i][j]);
         }
-        printf("probability\n");
+        printf("x\n");
         */
         for (int j = 0; j < N; j++) {
             double r1 = ((double)rand() / RAND_MAX) * (1.0);
             double r2 = ((double)rand() / RAND_MAX) * (1.0);
-            vel[i][j] = inertia * vel[i][j] + C1 * r1 * (probPbest[i][j] - prob[i][j]) + C2 * r2 * (probGbest[j] - prob[i][j]);
-            prob[i][j] = prob[i][j] + vel[i][j];
+            vel[i][j] = inertia * vel[i][j] + C1 * r1 * (xPbest[i][j] - x[i][j]) + C2 * r2 * (xGbest[j] - x[i][j]);
+            x[i][j] = x[i][j] + vel[i][j];
             //printf("%lf ", vel[i][j]);
-            if(prob[i][j] > BA){
-                prob[i][j] = BA;
+            if(x[i][j] > BA){
+                x[i][j] = BA;
             }
-            else if(prob[i][j] < BB){
-                prob[i][j] = BB;
+            else if(x[i][j] < BB){
+                x[i][j] = BB;
             }
         }
         //printf("velocity\n");
         /*
         for(int j = 0; j < N; j++){
-            printf("%lf ", prob[i][j]);
+            printf("%lf ", x[i][j]);
         }
-        printf("probability\n");
+        printf("x\n");
         */
     }
 }
 
-void printSortedProb(int NP, int N, double **sortedProb){
+void printSortedX(int NP, int N, double **sortedX){
     for(int i = 0; i <NP; i++){
         for(int j = 0; j < N; j++){
-            printf("%lf ", sortedProb[i][j]);
+            printf("%lf ", sortedX[i][j]);
         }
-        printf("sortedProb\n");
+        printf("sortedX\n");
     }
 }
 
-void copyArr(int currentParticle, int N, double **sortedProb, double **prob){
+void copyArr(int currentParticle, int N, double **sortedX, double **x){
     for(int i = 0; i < N; i++){
-        sortedProb[currentParticle][i] = prob[currentParticle][i];
+        sortedX[currentParticle][i] = x[currentParticle][i];
     }
-    //printSortedProb();
+    //printSortedX();
 }
 
 int compare(const void *a, const void *b) {
@@ -131,7 +133,7 @@ int compare(const void *a, const void *b) {
 
 
 
-void update_position(int NP, int N, double **sortedProb, int *visited, int startingCity, double **prob, int **pos) {
+void update_position(int NP, int N, double **sortedX, int *visited, int startingCity, double **x, int **pos) {
     for(int i=0; i<NP; i++) {
         for(int j = 0; j < N; j++){
             if(j == startingCity){
@@ -141,11 +143,11 @@ void update_position(int NP, int N, double **sortedProb, int *visited, int start
                 visited[j] = 0;
             }
         }
-        copyArr(i, N, sortedProb, prob);
-        qsort(sortedProb[i], N, sizeof(double), compare);
-        generateRoute(i, sortedProb, prob, visited, N, pos, startingCity);
+        copyArr(i, N, sortedX, x);
+        qsort(sortedX[i], N, sizeof(double), compare);
+        generateRoute(i, sortedX, x, visited, N, pos, startingCity);
     }
-    //printSortedProb();
+    //printSortedX();
 }
 
 double cost(int* tour, int N, double **dist) {
@@ -156,27 +158,27 @@ double cost(int* tour, int N, double **dist) {
     return c;
 }
 
-void update_gbest(int NP, int N, int **pbest, int *gbest, double **dist, double *probGbest, double **probPbest) {
+void update_gbest(int NP, int N, int **pbest, int *gbest, double **dist, double *xGbest, double **xPbest) {
     for(int i=0; i<NP; i++) {
         if(cost(pbest[i], N, dist) < cost(gbest, N, dist)) {
             for(int j=0; j<N+1; j++) {
                 gbest[j] = pbest[i][j];
             }
             for(int j=0; j<N; j++) {
-                probGbest[j] = probPbest[i][j];
+                xGbest[j] = xPbest[i][j];
             }
         }
     }
 }
 
-void update_pbest(int NP, int N, int **pbest, double **prob, int **pos, double **probPbest, double **dist) {
+void update_pbest(int NP, int N, int **pbest, double **x, int **pos, double **xPbest, double **dist) {
     for(int i=0; i<NP; i++) {
         if(cost(pos[i], N, dist) < cost(pbest[i], N, dist)) {
             for(int j=0; j<N+1; j++) {
                 pbest[i][j] = pos[i][j];
             }
             for(int j=0; j<N; j++) {
-                probPbest[i][j] = prob[i][j];
+                xPbest[i][j] = x[i][j];
             }
         }
     }
@@ -199,7 +201,7 @@ void printGbest(int N, int *gbest, double **dist){
     printf("gbest %lf\n", cost(gbest, N, dist));
 }
 
-void initialize(int N, int NP, double **dist, int *visited, double **prob, double **probPbest, double *probGbest, double **vel, int *gbest, int **pbest, int startingCity, int **pos) {
+void initialize(int N, int NP, double **dist, int *visited, double **x, double **xPbest, double *xGbest, double **vel, int *gbest, int **pbest, int startingCity, int **pos) {
     srand(time(NULL));
     for(int i = 0; i < N; i++){
         if(i == startingCity){
@@ -217,8 +219,8 @@ void initialize(int N, int NP, double **dist, int *visited, double **prob, doubl
     }
     for(int i = 0; i <NP; i ++){
         for(int j = 0; j < N; j++){
-            prob[i][j] = ((double)rand() / RAND_MAX) * (BA);
-            probPbest[i][j] = prob[i][j];
+            x[i][j] = ((double)rand() / RAND_MAX) * (BA);
+            xPbest[i][j] = x[i][j];
             vel[i][j] = ((double)rand() / RAND_MAX) * (BA);
         }
     }
@@ -226,12 +228,12 @@ void initialize(int N, int NP, double **dist, int *visited, double **prob, doubl
         gbest[i] = pos[0][i];
     }
     for(int i = 0; i < N; i++){
-        probGbest[i] = probPbest[0][i];
+        xGbest[i] = xPbest[0][i];
     }
     gbest[N] = gbest[0];
     //printPbest();
-    update_gbest(NP, N, pbest, gbest, dist, probGbest, probPbest);
-    printGbest(N, gbest, dist);
+    update_gbest(NP, N, pbest, gbest, dist, xGbest, xPbest);
+    //printGbest(N, gbest, dist);
 }
 
 void printPos(int NP, int N, int **pos){
@@ -292,7 +294,7 @@ void PSO(int start,int N, double **jarak,char **kota){
         update_pbest(NP, N, pBest, x, pos, xPbest, dist);
         //printPbest();
         update_gbest(NP, N, pBest, gBest, dist, xGbest, xPbest);
-        printGbest(N, gBest, dist);
+        //printGbest(N, gBest, dist);
     }
     printf("Best route found:\n%s",kota[start]);
     for (int i = 1; i<N+1; i++)
@@ -301,4 +303,88 @@ void PSO(int start,int N, double **jarak,char **kota){
     }
     printf("\n");
     printf("Best route distance:%f\n",cost(gBest, N, dist));
+}
+
+
+
+double haversine(double lat1, double lon1, double lat2, double lon2){
+    lat1 = lat1*(3.14159265359/180);
+    lon1 = lon1*(3.14159265359/180);
+    lat2 = lat2*(3.14159265359/180);
+    lon2 = lon2*(3.14159265359/180);
+    return 2*6371*asin(sqrt(pow(sin((lat2-lat1)/2),2)+cos(lat1)*cos(lat2)*pow(sin((lon2-lon1)/2),2)));
+}
+
+int main(){
+    clock_t t;
+    char filename[20];
+    char line[1000];
+    char *token;
+    printf("Enter list of cities file name: ");
+    scanf("%s",filename);
+
+    FILE* fp = fopen(filename, "r");
+    if (fp == NULL){
+        printf("There exist is no such file");
+        return 0;
+    }
+
+    int len = 0;
+    while (fgets(line,1000,fp)){
+        len++;
+    }
+
+    char** kota = malloc(len * sizeof(*kota));
+    for (int i=0;i<len;i++){
+        kota[i] = malloc(100 * sizeof(*kota[i]));
+    }
+
+    double latlong[len][2];
+    len = 0;
+    fclose(fp);
+    fp = fopen(filename, "r");
+    while (fgets(line,1000,fp)){
+        token = strtok(line,",");
+        strcpy(kota[len],token);
+        token = strtok(NULL,",");
+        latlong[len][0] = strtod(token,NULL);
+        token = strtok(NULL,",");
+        latlong[len][1] = strtod(token,NULL);
+        len++;
+    }
+
+    double** jarak = malloc(len * sizeof(*jarak));
+    for(int i=0;i<len;i++){
+        jarak[i] = malloc(len * sizeof(*jarak[i]));
+        for(int j=0;j<len;j++){
+            if (i==j){
+                jarak[i][j] = -1.0;
+            }
+            else{
+                jarak[i][j] = haversine(latlong[i][0],latlong[i][1],latlong[j][0],latlong[j][1]);
+            }
+        }
+    }
+
+    char str[100];
+    printf("Enter starting point: ");
+    scanf("%s",str);
+
+    int i=0;
+    while(i != len){
+        if (strcmp(str,kota[i]) == 0){
+            break;
+        }
+        i++;
+    }
+
+    if (i==len){
+        printf("There exist is no such city");
+        return 0;
+    }
+    
+    t = clock();
+    PSO(i, len, jarak, kota);
+    t = clock()-t;
+    printf("Time elapsed: %.20f", ((double)t)/CLOCKS_PER_SEC);
 }
