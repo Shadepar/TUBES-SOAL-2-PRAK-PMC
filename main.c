@@ -4,7 +4,7 @@
 #include <float.h>
 #include <math.h>
 #include <time.h>
-#include "greedy.h"
+#include "AntColonyOptimization.h"
 
 double haversine(double lat1, double lon1, double lat2, double lon2){
     lat1 = lat1*(3.14159265359/180);
@@ -88,7 +88,7 @@ int main(){
     }
     
     t = clock();
-    greedy(i,len,jarak,kota);
+    AntColonyOptimization(i, len, jarak, kota);
     t = clock()-t;
     printf("Time elapsed: %.20f", ((double)t)/CLOCKS_PER_SEC);
 }

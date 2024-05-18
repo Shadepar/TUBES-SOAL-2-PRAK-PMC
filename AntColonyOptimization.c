@@ -1,10 +1,10 @@
+#include "AntColonyOptimization.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
 
 #define MAX_CITIES 15
-#define MIN_CITIES 4
 #define NUM_ANTS 10
 #define MAX_ITERATIONS 100
 #define ALPHA 1.0  // Pengaruh jejak feromon
@@ -26,29 +26,10 @@ typedef struct {
     int visited[MAX_CITIES];
 } Ant;
 
+
 City cities[MAX_CITIES];
-double distances[MAX_CITIES][MAX_CITIES];
 double pheromones[MAX_CITIES][MAX_CITIES];
 Ant ants[NUM_ANTS];
-
-void calculate_distance_between_two_cities(int i, int j) {
-    if (i == j) {
-        distances[i][j] = 0.0;
-    } else {
-        double lat1 = cities[i].latitude * M_PI / 180.0;
-        double lon1 = cities[i].longitude * M_PI / 180.0;
-        double lat2 = cities[j].latitude * M_PI / 180.0;
-        double lon2 = cities[j].longitude * M_PI / 180.0;
-
-        double lat_diff = lat2 - lat1;
-        double lon_diff = lon2 - lon1;
-        double a = sin(lat_diff / 2) * sin(lat_diff / 2) +
-                   cos(lat1) * cos(lat2) *
-                   sin(lon_diff / 2) * sin(lon_diff / 2);
-        double c = 2 * atan2(sqrt(a), sqrt(1 - a));
-        distances[i][j] = EARTH_RADIUS * c;
-    }
-}
 
 void initialize_pheromones(int num_cities) {
     for (int i = 0; i < num_cities; i++) {
@@ -70,7 +51,7 @@ void initialize_ants(int num_cities, int start_city) {
     }
 }
 
-double calculate_probability(int from, int to, int ant_index, int num_cities) {
+double calculate_probability(int from, int to, int ant_index, int num_cities, double** distances) {
     double pheromone = pow(pheromones[from][to], ALPHA);
     double distance = pow(1.0 / distances[from][to], BETA);
     double total = 0.0;
@@ -84,13 +65,13 @@ double calculate_probability(int from, int to, int ant_index, int num_cities) {
     return (pheromone * distance) / total;
 }
 
-int select_next_city(int from, int ant_index, int num_cities) {
+int select_next_city(int from, int ant_index, int num_cities, double** distances) {
     double probabilities[MAX_CITIES];
     double sum = 0.0;
 
     for (int i = 0; i < num_cities; i++) {
         if (!ants[ant_index].visited[i] && i != from) {
-            probabilities[i] = calculate_probability(from, i, ant_index, num_cities);
+            probabilities[i] = calculate_probability(from, i, ant_index, num_cities, distances);
             sum += probabilities[i];
         } else {
             probabilities[i] = 0.0;
@@ -111,7 +92,7 @@ int select_next_city(int from, int ant_index, int num_cities) {
     return -1;
 }
 
-void update_pheromones(int num_cities) {
+void update_pheromones(int num_cities, double** distances) {
     for (int i = 0; i < num_cities; i++) {
         for (int j = 0; j < num_cities; j++) {
             pheromones[i][j] *= (1.0 - EVAPORATION_RATE);  // Evaporasi feromon
@@ -133,31 +114,31 @@ void update_pheromones(int num_cities) {
     }
 }
 
-void solve_tsp(int num_cities, int start_city) {
-    initialize_pheromones(num_cities);
+void AntColonyOptimization(int start, int len, double **jarak, char **kota) {
+    srand(time(NULL));
+
+    initialize_pheromones(len);
 
     for (int iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
-        initialize_ants(num_cities, start_city); // Reinitialize ants each iteration
+        initialize_ants(len, start); // Reinitialize ants each iteration
 
         for (int k = 0; k < NUM_ANTS; k++) {
-            for (int i = 1; i < num_cities; i++) {
+            for (int i = 1; i < len; i++) {
                 int from = ants[k].path[i - 1];
-                int next_city = select_next_city(from, k, num_cities);
+                int next_city = select_next_city(from, k, len, jarak);
                 if (next_city != -1) {
                     ants[k].path[i] = next_city;
                     ants[k].visited[next_city] = 1;
-                    ants[k].tour_length += distances[from][next_city];
+                    ants[k].tour_length += jarak[from][next_city];
                 }
             }
             // Return to start city
-            ants[k].tour_length += distances[ants[k].path[num_cities - 1]][start_city];
+            ants[k].tour_length += jarak[ants[k].path[len - 1]][start];
         }
 
-        update_pheromones(num_cities);
+        update_pheromones(len, jarak);
     }
-}
 
-void print_solution(int num_cities, int start_city) {
     double best_tour_length = ants[0].tour_length;
     int best_ant_index = 0;
 
@@ -169,61 +150,9 @@ void print_solution(int num_cities, int start_city) {
     }
 
     printf("Best route found:\n");
-    for (int i = 0; i < num_cities; i++) {
-        printf("%s -> ", cities[ants[best_ant_index].path[i]].name);
+    for (int i = 0; i < len; i++) {
+        printf("%s -> ", kota[ants[best_ant_index].path[i]]);
     }
-    printf("%s\n", cities[start_city].name);  // Return to start city
+    printf("%s\n", kota[start]);  // Return to start city
     printf("Best route distance: %lf km\n", best_tour_length);
-}
-
-void printMatrix(int rows, int cols, double matrix[rows][cols]) {
-    for(int i = 0; i < rows; i++) {
-        for(int j = 0; j < cols; j++) {
-            printf("%d ", matrix[i][j]);
-        }
-        printf("\n");
-    }
-}
-
-int main() {
-    srand(time(NULL));
-
-    int num_cities;
-    printf("Enter number of cities (4-15): ");
-    scanf("%d", &num_cities);
-
-    if (num_cities < MIN_CITIES || num_cities > MAX_CITIES) {
-        printf("Number of cities must be between 4 and 15.\n");
-        return 1;
-    }
-
-    for (int i = 0; i < num_cities; i++) {
-        printf("Enter name, latitude, and longitude of city %d: ", i + 1);
-        scanf("%s %lf %lf", cities[i].name, &cities[i].latitude, &cities[i].longitude);
-    }
-
-    // Hitung jarak antara semua kota setelah input selesai
-    for (int i = 0; i < num_cities; i++) {
-        for (int j = 0; j < num_cities; j++) {
-            calculate_distance_between_two_cities(i, j);
-        }
-    }
-
-    int start_city;
-    printf("Enter the index of the start city (0-%d): ", num_cities - 1);
-    scanf("%d", &start_city);
-
-    printf("\n");
-    printMatrix(15,15,distances);
-    printf("\n");
-
-    clock_t start_time = clock();
-    solve_tsp(num_cities, start_city);
-    clock_t end_time = clock();
-    double time_elapsed = ((double) (end_time - start_time)) / CLOCKS_PER_SEC;
-
-    print_solution(num_cities, start_city);
-    printf("Time elapsed: %lf s\n", time_elapsed);
-
-    return 0;
 }
