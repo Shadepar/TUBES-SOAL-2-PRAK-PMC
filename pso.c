@@ -9,7 +9,6 @@
 #define C1 3.0
 #define C2 1.0
 #define BA 2.5
-#define BB 0.0
 #define RHOMAX 0.6
 #define RHOMIN 0.4
 
@@ -18,12 +17,13 @@ int validation(int city, int currentParticle, int latestIndex, int **pos){
     for(int i=0; i<latestIndex; i++){
         if(city == pos[currentParticle][i]){
             valid = 0;
+            break;
         }
     }
     return valid;
 }
 
-int randomPermutation(int currentParticle, int latestIndex, int **pos, int N, int startingCity){
+int permutation(int currentParticle, int latestIndex, int **pos, int N, int startingCity){
     int valid = 0;
     int city = 0;
     if(latestIndex != 0 && latestIndex != N){
@@ -58,19 +58,25 @@ int generateRoute(int currentParticle, double **sortedX, double **x, int *visite
     }
 }
 
-void update_velocity(int iter, int NP, int NI, int N, double **vel, double **xPbest, double **x, double *xGbest) {
+void updateVelocity(int iter, int NP, int NI, int N, double **vel, double **xPbest, double **x, double *xGbest) {
+    double inertia = RHOMAX - ((RHOMAX - RHOMIN) / NI) * iter;
+    double r1 = 0, r2 = 0;
     for(int i = 0; i < NP; i++){
-        double inertia = RHOMAX - ((RHOMAX - RHOMIN) / NI) * iter;
         for (int j = 0; j < N; j++) {
-            double r1 = ((double)rand() / RAND_MAX) * (1.0);
-            double r2 = ((double)rand() / RAND_MAX) * (1.0);
+            r1 = ((double)rand() / RAND_MAX) * (1.0);
+            r2 = ((double)rand() / RAND_MAX) * (1.0);
             vel[i][j] = inertia * vel[i][j] + C1 * r1 * (xPbest[i][j] - x[i][j]) + C2 * r2 * (xGbest[j] - x[i][j]);
-            x[i][j] = x[i][j] + vel[i][j];
-            if(x[i][j] > BA){
-                x[i][j] = BA;
+            if(vel[i][j] > N/4){
+                vel[i][j] = N/4;
             }
-            else if(x[i][j] < BB){
-                x[i][j] = BB;
+            else if(vel[i][j] < -(N/4)){
+                vel[i][j] = -(N/4);            }
+            x[i][j] = x[i][j] + vel[i][j];
+            if(x[i][j] > N){
+                x[i][j] = N;
+            }
+            else if(x[i][j] < 0){
+                x[i][j] = 0;
             }
         }
     }
@@ -95,7 +101,7 @@ int compare(const void *a, const void *b) {
     }
 }
 
-void update_position(int NP, int N, double **sortedX, int *visited, int startingCity, double **x, int **pos) {
+void updatePosition(int NP, int N, double **sortedX, int *visited, int startingCity, double **x, int **pos) {
     for(int i=0; i<NP; i++) {
         for(int j = 0; j < N; j++){
             if(j == startingCity){
@@ -119,27 +125,27 @@ double cost(int* tour, int N, double **dist) {
     return c;
 }
 
-void update_gbest(int NP, int N, int **pbest, int *gbest, double **dist, double *xGbest, double **xPbest) {
+void updateGbest(int NP, int N, int **pbest, int *gbest, double **dist, double *xGbest, double **xPbest) {
     for(int i=0; i<NP; i++) {
         if(cost(pbest[i], N, dist) < cost(gbest, N, dist)) {
             for(int j=0; j<N+1; j++) {
                 gbest[j] = pbest[i][j];
-            }
-            for(int j=0; j<N; j++) {
-                xGbest[j] = xPbest[i][j];
+                if(j < N){
+                    xGbest[j] = xPbest[i][j];
+                }
             }
         }
     }
 }
 
-void update_pbest(int NP, int N, int **pbest, double **x, int **pos, double **xPbest, double **dist) {
+void updatePbest(int NP, int N, int **pbest, double **x, int **pos, double **xPbest, double **dist) {
     for(int i=0; i<NP; i++) {
         if(cost(pos[i], N, dist) < cost(pbest[i], N, dist)) {
             for(int j=0; j<N+1; j++) {
                 pbest[i][j] = pos[i][j];
-            }
-            for(int j=0; j<N; j++) {
-                xPbest[i][j] = x[i][j];
+                if(j < N){
+                    xPbest[i][j] = x[i][j];
+                }
             }
         }
     }
@@ -157,25 +163,42 @@ void initialize(int N, int NP, double **dist, int *visited, double **x, double *
     }
     for(int i=0; i<NP; i++) {
         for(int j=0; j<N+1; j++) {
-            pos[i][j] = randomPermutation(i, j, pos, N, startingCity);
+            pos[i][j] = permutation(i, j, pos, N, startingCity);
             pbest[i][j] = pos[i][j];
-        }
-    }
-    for(int i = 0; i <NP; i ++){
-        for(int j = 0; j < N; j++){
-            x[i][j] = ((double)rand() / RAND_MAX) * (BA);
-            xPbest[i][j] = x[i][j];
-            vel[i][j] = ((double)rand() / RAND_MAX) * (BA);
+            if(j<N){
+                x[i][j] = ((double)rand() / RAND_MAX) * (BA);
+                xPbest[i][j] = x[i][j];
+                vel[i][j] = ((double)rand() / RAND_MAX) * (BA);
+            }
         }
     }
     for(int i=0; i<N+1; i++) {
         gbest[i] = pos[0][i];
+        if(i < N){
+            xGbest[i] = xPbest[0][i];
+        }
     }
-    for(int i = 0; i < N; i++){
-        xGbest[i] = xPbest[0][i];
+    updateGbest(NP, N, pbest, gbest, dist, xGbest, xPbest);
+}
+
+void bersihkanMemori(int N, int NP, double **dist, int *visited, double **x, double **xPbest, double *xGbest, double **vel, int *gBest, int **pBest, int **pos, double** sortedX){
+    for (int i=0;i<NP;i++){
+        free(pBest[i]);
+        free(pos[i]);
+        free(vel[i]);
+        free(x[i]);
+        free(xPbest[i]);
+        free(sortedX[i]);
     }
-    gbest[N] = gbest[0];
-    update_gbest(NP, N, pbest, gbest, dist, xGbest, xPbest);
+    free(visited);
+    free(gBest);
+    free(xGbest);
+    free(pBest);
+    free(pos);
+    free(vel);
+    free(x);
+    free(xPbest);
+    free(sortedX);
 }
 
 void PSO(int start,int N, double **jarak,char **kota){
@@ -185,45 +208,29 @@ void PSO(int start,int N, double **jarak,char **kota){
     int NI = N * 20 + 100;
     int* visited = malloc(N * sizeof(visited));
     int* gBest = malloc((N+1) * sizeof(gBest));
-
     int** pBest = malloc((NP) * sizeof(*pBest));
+    int** pos = malloc((NP) * sizeof(*pos));
+    double** vel = malloc(NP * sizeof(*vel));
+    double** x = malloc(NP * sizeof(*x));
+    double** xPbest = malloc(NP * sizeof(*xPbest));
+    double* xGbest = malloc(N * sizeof(xGbest));
+    double** sortedX = malloc(NP * sizeof(*sortedX));
+
     for (int i=0;i<NP;i++){
         pBest[i] = malloc((N+1) * sizeof(*pBest[i]));
-    }
-
-    int** pos = malloc((NP) * sizeof(*pos));
-    for (int i=0;i<NP;i++){
         pos[i] = malloc((N+1) * sizeof(*pos[i]));
-    }
-
-    double** vel = malloc(NP * sizeof(*vel));
-    for (int i=0;i<NP;i++){
         vel[i] = malloc(N * sizeof(*vel[i]));
-    }
-
-    double** x = malloc(NP * sizeof(*x));
-    for (int i=0;i<NP;i++){
         x[i] = malloc(N * sizeof(*x[i]));
-    }
-
-    double** xPbest = malloc(NP * sizeof(*xPbest));
-    for (int i=0;i<NP;i++){
         xPbest[i] = malloc(N * sizeof(*xPbest[i]));
-    }
-
-    double* xGbest = malloc(N * sizeof(xGbest));
-
-    double** sortedX = malloc(NP * sizeof(*sortedX));
-    for (int i=0;i<NP;i++){
         sortedX[i] = malloc(N * sizeof(*sortedX[i]));
     }
 
     initialize(N, NP, dist, visited, x, xPbest, xGbest, vel, gBest, pBest, startingCity, pos);
     for(int i=0; i<NI; i++){
-        update_velocity(i, NP, NI, N, vel, xPbest, x, xGbest);
-        update_position(NP, N, sortedX, visited, startingCity, x, pos);
-        update_pbest(NP, N, pBest, x, pos, xPbest, dist);
-        update_gbest(NP, N, pBest, gBest, dist, xGbest, xPbest);
+        updateVelocity(i, NP, NI, N, vel, xPbest, x, xGbest);
+        updatePosition(NP, N, sortedX, visited, startingCity, x, pos);
+        updatePbest(NP, N, pBest, x, pos, xPbest, dist);
+        updateGbest(NP, N, pBest, gBest, dist, xGbest, xPbest);
     }
     printf("Best route found:\n%s",kota[start]);
     for (int i = 1; i<N+1; i++)
@@ -232,4 +239,5 @@ void PSO(int start,int N, double **jarak,char **kota){
     }
     printf("\n");
     printf("Best route distance: %f km\n",cost(gBest, N, dist));
+    bersihkanMemori(N, NP, dist, visited, x, xPbest, xGbest, vel, gBest, pBest, pos, sortedX);
 }
